@@ -22,7 +22,8 @@ export async function sb(path, { method = 'GET', body, prefer } = {}) {
     method,
     headers: {
       apikey: SB_KEY,
-      Authorization: `Bearer ${SB_KEY}`,
+      // legacy service_role keys are JWTs and go in Authorization too; new sb_secret_ keys go in apikey only
+      ...(SB_KEY.startsWith('eyJ') ? { Authorization: `Bearer ${SB_KEY}` } : {}),
       'Content-Type': 'application/json',
       ...(prefer ? { Prefer: prefer } : {}),
     },

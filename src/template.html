@@ -184,7 +184,7 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--in
 
       <div class="hint" id="hint"><span class="dot">+</span><span>คลิกบนแผนที่ตรงตำแหน่งหมู่บ้านเพื่อปักหมุด หรือวางพิกัด / ลิงก์ Google Maps ด้านล่าง</span></div>
       <div class="row">
-        <input type="text" id="coordIn" placeholder="เช่น 13.7563, 100.5018 หรือ ลิงก์ Google Maps" aria-label="พิกัดหรือลิงก์ Google Maps">
+        <input type="text" id="coordIn" placeholder="วางลิงก์ Google Maps หรือพิกัด เช่น 13.7563, 100.5018" aria-label="พิกัดหรือลิงก์ Google Maps">
         <button class="btn" id="coordGo" style="flex:none">ไปที่พิกัด</button>
       </div>
 
@@ -487,16 +487,16 @@ function render(){
 }
 
 /* ---------- add form ---------- */
-function startDraft(lat,lng){
+function startDraft(lat,lng,prec){
   const d=districtAt(lat,lng); if(!d){toast('ตอนนี้รับเฉพาะพื้นที่ในกรุงเทพฯ ก่อน');return}
-  state.draft={...(state.draft||{}),lat,lng,d:d.c};
+  state.draft={...(state.draft||{}),lat,lng,d:d.c,approx:prec&&prec!=='exact'?prec:null};
   const ll=[lat,lng];
   if(!draftMarker){draftMarker=L.marker(ll,{draggable:true,icon:L.divIcon({className:'draft-pin',html:`<div style="width:22px;height:22px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${cssVar('--accent')};border:3px solid ${cssVar('--panel')};box-shadow:0 2px 6px rgba(0,0,0,.35)"></div>`,iconSize:[22,22],iconAnchor:[4,20]})}).addTo(map);
-    draftMarker.on('dragend',()=>{const p=draftMarker.getLatLng();const dd=districtAt(p.lat,p.lng);if(!dd){toast('ต้องอยู่ในกรุงเทพฯ');draftMarker.setLatLng([state.draft.lat,state.draft.lng]);return}state.draft.lat=p.lat;state.draft.lng=p.lng;state.draft.d=dd.c;$('#fWhere').textContent=whereText()})}
+    draftMarker.on('dragend',()=>{const p=draftMarker.getLatLng();const dd=districtAt(p.lat,p.lng);if(!dd){toast('ต้องอยู่ในกรุงเทพฯ');draftMarker.setLatLng([state.draft.lat,state.draft.lng]);return}state.draft.lat=p.lat;state.draft.lng=p.lng;state.draft.d=dd.c;state.draft.approx=null;$('#fWhere').textContent=whereText()})}
   else draftMarker.setLatLng(ll);
   showForm();
 }
-function whereText(){const d=state.draft;return `เขต${distByCode[d.d]?.n||''} · ${d.lat.toFixed(5)}, ${d.lng.toFixed(5)} (ลากหมุดเพื่อขยับได้)`}
+function whereText(){const d=state.draft;return d.approx?`เขต${distByCode[d.d]?.n||''} · ⚠ ตำแหน่งโดยประมาณ ลากหมุดให้ตรงบ้านก่อนบันทึก`:`เขต${distByCode[d.d]?.n||''} · ${d.lat.toFixed(5)}, ${d.lng.toFixed(5)} (ลากหมุดเพื่อขยับได้)`}
 function seg(name){
   const box=el('div',{class:'seg',role:'radiogroup'});
   for(const v of ['dry','wet','unk']){const id=name+'_'+v;const i=el('input',{type:'radio',name,id,value:v});if(state.draft?.[name]===v)i.checked=true;
@@ -543,14 +543,48 @@ $('#distSel').onchange=e=>{state.dist=e.target.value;render();
   if(state.dist){const f=DISTRICTS.features.find(f=>String(f.properties.c)===state.dist);map.fitBounds(L.geoJSON(f).getBounds(),{padding:[20,20]})}};
 $('#q').oninput=e=>{state.q=e.target.value.trim();render()};
 $('#chips').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;state.filter=b.dataset.f;document.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',c===b?'true':'false'));render()};
-function parseCoord(s){
-  s=decodeURIComponent(s||'');
-  let m=s.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)||s.match(/[?&](?:q|ll|query)=(-?\d+\.\d+),\s*(-?\d+\.\d+)/)||s.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)||s.match(/(-?\d{1,2}\.\d+)\s*,\s*(-?\d{2,3}\.\d+)/);
-  return m?[+m[1],+m[2]]:null;
+/* ---------- paste a Google Maps link or coordinates ---------- */
+// same patterns as api/_maplink.js
+function parseCoord(input){
+  let s=String(input||'');
+  for(let i=0;i<3;i++){try{const d=decodeURIComponent(s);if(d===s)break;s=d}catch(e){break}}
+  const pats=[/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,/[?&](?:q|ll|query|destination|daddr|center|sll)=(-?\d+\.\d+),\s*(-?\d+\.\d+)/,/\/search\/(-?\d+\.\d+),\s*\+?(-?\d+\.\d+)/,
+    /\/place\/(-?\d+\.\d+),\s*(-?\d+\.\d+)/,/@(-?\d+\.\d+),(-?\d+\.\d+)/,/geo:(-?\d+\.\d+),(-?\d+\.\d+)/,/^\s*(-?\d{1,2}\.\d+)\s*,\s*(-?\d{2,3}\.\d+)\s*$/,/(-?\d{1,2}\.\d{3,})\s*[, ]\s*(-?\d{2,3}\.\d{3,})/];
+  for(const p of pats){const m=s.match(p);if(m)return[+m[1],+m[2]]}
+  return null;
 }
-$('#coordGo').onclick=()=>{const c=parseCoord($('#coordIn').value);if(!c){toast('อ่านพิกัดไม่ออก ลองแบบ 13.75, 100.50');return}
-  map.setView(c,16);startDraft(c[0],c[1])};
-$('#coordIn').onkeydown=e=>{if(e.key==='Enter')$('#coordGo').click()};
+const looksLikeLink=s=>/^\s*https?:\/\/\S+/i.test(s);
+const looksLikeMap=s=>looksLikeLink(s)&&/(google\.[a-z.]+\/maps|maps\.google\.|maps\.app\.goo\.gl|goo\.gl\/maps|g\.co\/kgs)/i.test(s);
+let goBusy=false;
+async function goTo(text){
+  text=String(text||'').trim(); if(!text||goBusy)return;
+  let c=parseCoord(text), prec='exact', label='';
+  if(!c && looksLikeMap(text)){
+    goBusy=true; const btn=$('#coordGo'); btn.disabled=true; btn.textContent='กำลังอ่านลิงก์…';
+    try{
+      const r=await fetch('/api/resolve-map',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:text})});
+      const j=await r.json().catch(()=>({}));
+      if(r.ok){ c=[j.lat,j.lng]; prec=j.precision||'exact'; label=j.label||''; } else { toast(j.error||'อ่านลิงก์ไม่สำเร็จ'); return; }
+    }catch(e){ toast('อ่านลิงก์ไม่สำเร็จ ลองวางพิกัดแทน'); return; }
+    finally{ goBusy=false; btn.disabled=false; btn.textContent='ไปที่พิกัด'; }
+  }
+  if(!c){ toast(looksLikeLink(text)?'รองรับเฉพาะลิงก์ Google Maps หรือพิกัด':'อ่านพิกัดไม่ออก ลองแบบ 13.75, 100.50'); return; }
+  if(!districtAt(c[0],c[1])){ toast('ตำแหน่งนี้อยู่นอกกรุงเทพฯ ตอนนี้รับเฉพาะในกรุงเทพฯ ก่อน'); return; }
+  userMoved=true; map.setView(c, prec==='district'?14 : prec==='street'?16 : 17); startDraft(c[0],c[1],prec);
+  if(prec==='street') toast('ลิงก์นี้ไม่มีพิกัด ได้ตำแหน่งโดยประมาณจากที่อยู่ ลากหมุดให้ตรงบ้านก่อนบันทึก');
+  else if(prec==='district') toast(`ลิงก์นี้ไม่มีพิกัด พาไปที่${label}ให้ก่อน ลากหมุดหรือคลิกตรงบ้าน`);
+  $('#coordIn').value='';
+}
+$('#coordGo').onclick=()=>goTo($('#coordIn').value);
+$('#coordIn').onkeydown=e=>{if(e.key==='Enter')goTo($('#coordIn').value)};
+// pasting into the box works right away, no button needed
+$('#coordIn').addEventListener('paste',e=>{const t=e.clipboardData?.getData('text');if(t){e.preventDefault();$('#coordIn').value=t;goTo(t)}});
+// pasting a map link anywhere on the page (outside other text fields) works too
+document.addEventListener('paste',e=>{
+  if(e.target.closest?.('input,textarea,[contenteditable]'))return;
+  const t=e.clipboardData?.getData('text')||'';
+  if(looksLikeMap(t)||parseCoord(t)){e.preventDefault();$('#coordIn').value=t;goTo(t)}
+});
 
 /* ---------- boot ---------- */
 function useStore(store){
