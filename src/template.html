@@ -1,0 +1,571 @@
+<title>Tee Nai Rod</title>
+<meta name="description" content="Tee Nai Rod (ที่ไหนรอด) — แผนที่ให้คนกรุงเทพฯ ช่วยกันปักหมุดหมู่บ้านที่น้ำไม่ท่วมในปี 2554 และ 2569">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>/*__LEAFLET_CSS__*/</style>
+<style>
+:root{
+  --ground:#F2F4EF; --panel:#FBFCF9; --ink:#17302F; --ink-2:#4B605E; --ink-3:#7C8C89;
+  --line:#D7DED8; --accent:#0F5A63; --accent-ink:#FFFFFF; --accent-soft:#DDEBEA;
+  --land:#FFFFFF; --land-edge:#9FB0AA; --land-hi:#86EFAC;
+  --dry:#16A34A; --mixed:#F59E0B; --wet:#DC2626; --unk:#6B7280;
+  --focus:#1B7F8C; --shadow:0 1px 2px rgba(20,40,38,.08),0 6px 20px rgba(20,40,38,.08);
+  --body:"IBM Plex Sans Thai",system-ui,"Leelawadee UI","Noto Sans Thai",sans-serif;
+  --display:"Bai Jamjuree","IBM Plex Sans Thai",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#0E1716; --panel:#132020; --ink:#E4EEEC; --ink-2:#A9BBB8; --ink-3:#7B8E8B;
+    --line:#26393A; --accent:#5CC2CC; --accent-ink:#082022; --accent-soft:#1B3434;
+    --land:#1A2A2A; --land-edge:#3F5857; --land-hi:#15803D;
+    --dry:#22C55E; --mixed:#FBBF24; --wet:#F87171; --unk:#9CA3AF;
+    --focus:#7FD6DE; --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#0E1716; --panel:#132020; --ink:#E4EEEC; --ink-2:#A9BBB8; --ink-3:#7B8E8B;
+  --line:#26393A; --accent:#5CC2CC; --accent-ink:#082022; --accent-soft:#1B3434;
+  --land:#1A2A2A; --land-edge:#3F5857; --land-hi:#15803D;
+  --dry:#22C55E; --mixed:#FBBF24; --wet:#F87171; --unk:#9CA3AF;
+  --focus:#7FD6DE; --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.3);
+}
+html,body{height:100%}
+body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+.app{display:grid;grid-template-columns:minmax(320px,400px) 1fr;height:100%}
+.panel{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.panel-scroll{overflow-y:auto;padding:20px 20px 28px;display:flex;flex-direction:column;gap:18px;min-height:0;flex:1}
+.mapwrap{position:relative;min-height:0}
+#map{position:absolute;inset:0;background:var(--ground)}
+
+.brand{font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:.02em;color:var(--ink);display:flex;align-items:baseline;gap:4px;flex-wrap:wrap;margin-bottom:6px}
+.brand span{color:var(--accent)}
+.brand small{font-family:var(--body);font-weight:500;font-size:12px;color:var(--ink-3);margin-left:6px;letter-spacing:0}
+h1{font-family:var(--display);font-weight:700;font-size:26px;line-height:1.2;margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1 .yr{color:var(--accent)}
+.lede{margin:6px 0 0;color:var(--ink-2);font-size:14px}
+.eyebrow{font-size:12px;letter-spacing:.06em;color:var(--ink-3);font-weight:600;text-transform:uppercase}
+.mode{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3);margin-top:8px}
+.mode i{width:7px;height:7px;border-radius:50%;background:var(--unk);display:inline-block}
+.mode.live i{background:var(--dry)}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.stat{background:var(--panel);padding:10px 12px}
+.stat b{display:block;font-family:var(--mono);font-size:20px;font-variant-numeric:tabular-nums;line-height:1.2}
+.stat span{font-size:12px;color:var(--ink-2)}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:transparent;border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer;color:var(--ink-2)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.row{display:flex;gap:8px}
+.row>*{flex:1;min-width:0}
+input[type=text],input[type=search],select,textarea{width:100%;border:1px solid var(--line);background:var(--land);border-radius:8px;padding:8px 10px}
+textarea{resize:vertical;min-height:60px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--ink-2);font-weight:500}
+
+.hint{display:flex;gap:10px;align-items:flex-start;background:var(--accent-soft);border-radius:10px;padding:10px 12px;font-size:13.5px;color:var(--ink)}
+.hint .dot{flex:none;width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-weight:700;font-size:13px;margin-top:1px}
+
+.list{display:flex;flex-direction:column}
+.item{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:start;padding:10px 4px;border-top:1px solid var(--line);cursor:pointer;background:none;border-left:0;border-right:0;border-bottom:0;text-align:left;width:100%}
+.item:hover{background:var(--accent-soft)}
+.item .nm{font-weight:600;overflow-wrap:anywhere}
+.item .meta{font-size:12.5px;color:var(--ink-3)}
+.sw{width:12px;height:12px;border-radius:50%;margin-top:6px;border:2px solid var(--panel);box-shadow:0 0 0 1px var(--line)}
+.yrs{display:flex;gap:4px}
+.yb{font-family:var(--mono);font-size:11px;padding:2px 6px;border-radius:4px;border:1px solid currentColor;white-space:nowrap}
+.yb.dry{background:var(--dry);border-color:var(--dry);color:#fff} .yb.wet{background:var(--wet);border-color:var(--wet);color:#fff} .yb.unk{color:var(--ink-2);border-color:var(--line)}
+.tag-ex{font-size:11px;color:var(--mixed);border:1px dashed var(--mixed);border-radius:4px;padding:0 5px;margin-left:6px;font-weight:500}
+.empty{color:var(--ink-3);font-size:13.5px;padding:12px 0;border-top:1px solid var(--line)}
+
+/* form */
+.form{border:1px solid var(--accent);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:12px;background:var(--land);box-shadow:var(--shadow)}
+.form h2{margin:0;font-family:var(--display);font-size:18px}
+.form .where{font-size:13px;color:var(--ink-2)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label{text-align:center;padding:7px 4px;font-size:13px;cursor:pointer;border-left:1px solid var(--line)}
+.seg label:first-of-type{border-left:0}
+.seg input:focus-visible+label{outline:2px solid var(--focus);outline-offset:-2px}
+.seg input:checked+label.dry{background:var(--dry);color:#fff}
+.seg input:checked+label.wet{background:var(--wet);color:#fff}
+.seg input:checked+label.unk{background:var(--unk);color:#fff}
+.yearq{display:flex;flex-direction:column;gap:6px}
+.yearq .q{font-size:13px;font-weight:600}
+.btns{display:flex;gap:8px;justify-content:flex-end}
+.btn{border:1px solid var(--line);background:transparent;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:500}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{color:var(--wet);border-color:var(--wet)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.votes{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.vbtn{border:1px solid var(--line);background:transparent;border-radius:999px;padding:3px 10px;font-size:12.5px;cursor:pointer;color:var(--ink-2)}
+.vbtn:hover{border-color:var(--accent);color:var(--ink)}
+.vbtn.on{background:var(--accent-soft);border-color:var(--accent);color:var(--ink);font-weight:600}
+.err{color:var(--wet);font-size:13px;min-height:0}
+
+.legend{position:absolute;right:12px;bottom:24px;z-index:500;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13.5px;font-weight:500;display:flex;flex-direction:column;gap:4px;box-shadow:var(--shadow)}
+.legend div{display:flex;align-items:center;gap:8px}
+.legend i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.topbar{position:absolute;left:60px;top:12px;right:12px;z-index:500;display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;pointer-events:none}
+.topbar>*{pointer-events:auto}
+.basemaps{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:6px;max-width:100%}
+.bm-toggle{display:flex;align-items:center;gap:8px;background:none;border:0;cursor:pointer;font-size:13px;font-weight:600;padding:2px 6px;color:var(--ink)}
+.bm-toggle .cur{color:var(--accent)}
+.bm-grid{display:grid;grid-template-columns:repeat(3,76px);gap:6px}
+.bm{border:2px solid transparent;border-radius:8px;padding:0;background:none;cursor:pointer;display:flex;flex-direction:column;overflow:hidden;font-size:11.5px;color:var(--ink-2)}
+.bm .sw2{height:44px;width:100%}
+.bm span{padding:3px 0 4px;text-align:center}
+.bm[aria-pressed="true"]{border-color:var(--accent);color:var(--ink);font-weight:600}
+.bm-opts{display:flex;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-2);padding:2px 6px}
+.bm-opts label{display:flex;align-items:center;gap:5px;cursor:pointer}
+.bm-opts input{accent-color:var(--accent);margin:0}
+.toast{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);z-index:600;background:var(--ink);color:var(--panel);padding:8px 14px;border-radius:8px;font-size:13.5px;box-shadow:var(--shadow)}
+
+/* leaflet theming */
+.leaflet-container{background:var(--ground);font-family:var(--body)}
+.leaflet-tooltip{background:var(--panel);color:var(--ink);border:1px solid var(--line);box-shadow:var(--shadow);font-family:var(--body)}
+.leaflet-tooltip-top:before{border-top-color:var(--line)}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--panel);color:var(--ink)}
+.leaflet-popup-content{margin:12px 14px;font-size:14px;line-height:1.5}
+.pop h3{margin:0 0 4px;font-family:var(--display);font-size:16px}
+.pop p{margin:6px 0 0;color:var(--ink-2);font-size:13px;overflow-wrap:anywhere}
+.leaflet-bar a{background:var(--panel);color:var(--ink);border-color:var(--line)}
+.leaflet-control-attribution{background:color-mix(in srgb,var(--panel) 80%,transparent)!important;color:var(--ink-3)}
+.leaflet-control-attribution a{color:var(--accent)}
+.tiles-soft{filter:saturate(.7)}
+.pin{background:none;border:0}
+.pin b{position:absolute;left:0;top:0;width:28px;height:28px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.45);display:block}
+.pin b{font-size:0}
+.pin::after{position:absolute;left:0;top:0;width:28px;height:28px;display:grid;place-items:center;color:#fff;font:700 15px/1 var(--body);pointer-events:none}
+.pin-dry b{background:var(--dry)} .pin-mixed b{background:var(--mixed)} .pin-wet b{background:var(--wet)} .pin-unk b{background:var(--unk)}
+.pin-dry::after{content:'✓'} .pin-mixed::after{content:'!';color:#1f1300} .pin-wet::after{content:'✕'} .pin-unk::after{content:'?'}
+.g{width:20px;height:20px;border-radius:50%;display:inline-grid;place-items:center;color:#fff;font-weight:700;font-size:12px;line-height:1;flex:none;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.18)}
+.g.dry{background:var(--dry)} .g.mixed{background:var(--mixed);color:#1f1300} .g.wet{background:var(--wet)} .g.unk{background:var(--unk)}
+#map.labels-dark .leaflet-tooltip.dlabel{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9)}
+.leaflet-tooltip.dlabel{text-shadow:0 0 3px var(--panel),0 0 3px var(--panel)}
+.draft-pin{cursor:move}
+.leaflet-tooltip.dlabel{background:none;border:0;box-shadow:none;color:var(--ink-3);font-size:11px;font-weight:600;padding:0}
+.leaflet-tooltip.dlabel:before{display:none}
+
+@media (max-width:820px){
+  .app{grid-template-columns:1fr;grid-template-rows:56vh auto;height:auto}
+  .mapwrap{order:-1;height:56vh}
+  .panel{border-right:0;border-top:1px solid var(--line)}
+  .panel-scroll{padding:16px}
+  .legend{bottom:12px;right:8px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="app">
+  <aside class="panel">
+    <div class="panel-scroll">
+      <header>
+        <div class="brand">Tee Nai <span>Rod</span><small>ที่ไหนรอด · กรุงเทพฯ 50 เขต</small></div>
+        <h1>บ้านไหน<span class="yr">รอดน้ำ</span> ปี 54 และ ปี 69</h1>
+        <p class="lede">ช่วยกันปักหมุดหมู่บ้าน ชุมชน หรือคอนโดที่คุณรู้จริง ว่าน้ำท่วมหรือไม่ท่วมในมหาอุทกภัย 2554 และน้ำปี 2569</p>
+        <div class="mode" id="mode"><i></i><span>กำลังเชื่อมต่อ…</span></div>
+      </header>
+
+      <div class="stats" aria-label="สรุป">
+        <div class="stat"><b id="sAll">0</b><span>หมุดทั้งหมด</span></div>
+        <div class="stat"><b id="sBoth" style="color:var(--dry)">0</b><span>รอดทั้ง 2 ปี</span></div>
+        <div class="stat"><b id="sDist">0</b><span>เขตที่มีข้อมูล</span></div>
+      </div>
+
+      <div id="formHost"></div>
+
+      <div class="hint" id="hint"><span class="dot">+</span><span>คลิกบนแผนที่ตรงตำแหน่งหมู่บ้านเพื่อปักหมุด หรือวางพิกัด / ลิงก์ Google Maps ด้านล่าง</span></div>
+      <div class="row">
+        <input type="text" id="coordIn" placeholder="เช่น 13.7563, 100.5018 หรือ ลิงก์ Google Maps" aria-label="พิกัดหรือลิงก์ Google Maps">
+        <button class="btn" id="coordGo" style="flex:none">ไปที่พิกัด</button>
+      </div>
+
+      <section style="display:flex;flex-direction:column;gap:10px">
+        <div class="eyebrow">แสดงเฉพาะ</div>
+        <div class="chips" id="chips">
+          <button class="chip" data-f="all" aria-pressed="true">ทั้งหมด</button>
+          <button class="chip" data-f="both" aria-pressed="false">รอดทั้ง 2 ปี</button>
+          <button class="chip" data-f="y54" aria-pressed="false">รอดปี 54</button>
+          <button class="chip" data-f="y69" aria-pressed="false">รอดปี 69</button>
+        </div>
+        <div class="row">
+          <select id="distSel" aria-label="เลือกเขต"><option value="">ทุกเขต</option></select>
+          <input type="search" id="q" placeholder="ค้นชื่อหมู่บ้าน" aria-label="ค้นชื่อหมู่บ้าน">
+        </div>
+      </section>
+
+      <section>
+        <div class="eyebrow" style="margin-bottom:6px"><span id="listCount">0</span> รายการ</div>
+        <div class="list" id="list"></div>
+      </section>
+    </div>
+  </aside>
+  <main class="mapwrap">
+    <div id="map" aria-label="แผนที่กรุงเทพฯ"></div>
+    <div class="topbar">
+      <div class="basemaps" id="basemaps">
+        <button class="bm-toggle" id="bmToggle" type="button" aria-expanded="false" aria-controls="bmPanel">
+          <span>แบบแผนที่:</span><span class="cur" id="bmCur">ถนน</span><span aria-hidden="true">▾</span>
+        </button>
+        <div id="bmPanel" hidden>
+          <div class="bm-grid" id="bmGrid"></div>
+          <div class="bm-opts">
+            <label><input type="checkbox" id="optEdges" checked>เส้นเขต</label>
+            <label><input type="checkbox" id="optLabels" checked>ชื่อเขต</label>
+            <label><input type="checkbox" id="optShade" checked>แรเงาเขตที่รอด</label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="legend" aria-label="คำอธิบายสีหมุด">
+      <div><span class="g dry">✓</span>ไม่ท่วมทั้ง 2 ปี</div>
+      <div><span class="g mixed">!</span>ท่วมบางปี</div>
+      <div><span class="g wet">✕</span>ท่วมทั้ง 2 ปี</div>
+      <div><span class="g unk">?</span>ข้อมูลยังไม่ครบ</div>
+    </div>
+    <div class="toast" id="toast" hidden></div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script>
+const DISTRICTS = /*__GEOJSON__*/null;
+const LS_KEY = 'bkk-flood-pins-v1';
+const YEAR_LABEL = {dry:'ไม่ท่วม', wet:'ท่วม', unk:'ไม่ทราบ'};
+const EXAMPLES = [
+  {id:'ex1', name:'หมู่บ้านตัวอย่าง ก', lat:13.7465, lng:100.6530, y54:'dry', y69:'dry', note:'ตัวอย่างการกรอก: ถนนหน้าหมู่บ้านน้ำขังแต่ไม่เข้าบ้าน', example:true, at:Date.now()-86400000*2},
+  {id:'ex2', name:'ชุมชนตัวอย่าง ข', lat:13.8830, lng:100.5790, y54:'wet', y69:'dry', note:'ตัวอย่าง: ปี 54 ท่วมราว 50 ซม.', example:true, at:Date.now()-86400000},
+  {id:'ex3', name:'คอนโดตัวอย่าง ค', lat:13.7220, lng:100.4260, y54:'wet', y69:'unk', note:'', example:true, at:Date.now()-3600000},
+];
+
+const $ = s => document.querySelector(s);
+const state = {pins:[], filter:'all', dist:'', q:'', draft:null, store:null};
+
+function toast(msg){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,2600)}
+function cssVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
+function pinClass(p){
+  if(p.y54==='dry'&&p.y69==='dry') return 'dry';
+  if(p.y54==='wet'&&p.y69==='wet') return 'wet';
+  if(p.y54==='unk'||p.y69==='unk') return (p.y54==='wet'||p.y69==='wet')?'mixed':'unk';
+  return 'mixed';
+}
+const pinColor = p => cssVar('--'+pinClass(p));
+const GLYPH={dry:'✓',mixed:'!',wet:'✕',unk:'?'};
+const iconCache={};
+function pinIcon(k){ return iconCache[k] ||= L.divIcon({className:'pin pin-'+k+'',html:`<b></b>`,iconSize:[28,36],iconAnchor:[14,34],popupAnchor:[0,0]}); }
+
+/* ---------- geometry ---------- */
+function inRing(x,y,r){let c=false;for(let i=0,j=r.length-1;i<r.length;j=i++){const [xi,yi]=r[i],[xj,yj]=r[j];if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))c=!c}return c}
+function districtAt(lat,lng){
+  for(const f of DISTRICTS.features){const rs=f.geometry.coordinates;if(inRing(lng,lat,rs[0])&&!rs.slice(1).some(h=>inRing(lng,lat,h)))return f.properties}
+  return null;
+}
+const distByCode = Object.fromEntries(DISTRICTS.features.map(f=>[f.properties.c,f.properties]));
+
+/* ---------- map ---------- */
+const map = L.map('map',{zoomControl:true,minZoom:10,maxZoom:18,attributionControl:true}).setView([13.75,100.62],11);
+const bounds = L.geoJSON(DISTRICTS).getBounds();
+let userMoved=false;
+function fitBkk(){ map.invalidateSize(); if(!userMoved) map.fitBounds(bounds,{padding:[10,10]}); }
+fitBkk();
+window.addEventListener('load',fitBkk);
+['pointerdown','wheel'].forEach(ev=>document.getElementById('map').addEventListener(ev,()=>{userMoved=true},{once:true,passive:true}));
+new ResizeObserver(()=>map.invalidateSize()).observe(document.getElementById('map'));
+map.setMaxBounds(bounds.pad(0.35));
+
+/* ---------- basemaps ---------- */
+const OSM='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+const BASEMAPS=[
+  {id:'light', name:'สว่าง', sw:'linear-gradient(135deg,#f5f5f3 55%,#dcdcd8)', url:'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', o:{maxZoom:19,maxNativeZoom:16,attribution:'&copy; Esri'}, labels:'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}', lo:{maxNativeZoom:16}},
+  {id:'street',name:'ถนน', sw:'linear-gradient(135deg,#f2efe9 40%,#f6d58a 41% 48%,#aad3df 49%)', url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png', o:{maxZoom:19,className:'tiles-soft',attribution:OSM}},
+  {id:'sat',   name:'ดาวเทียม', sw:'linear-gradient(135deg,#3d5a36,#6b7d4a 45%,#8a8f86 70%,#2f4a5a)', url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', o:{maxZoom:19,attribution:'Imagery &copy; Esri'},
+     labels:'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', dark:true},
+  {id:'dark',  name:'มืด', sw:'linear-gradient(135deg,#1b1d20 55%,#34383d)', url:'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', o:{maxZoom:19,maxNativeZoom:16,attribution:'&copy; Esri'}, labels:'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', lo:{maxNativeZoom:16}, dark:true},
+  {id:'topo',  name:'ภูมิประเทศ', sw:'linear-gradient(135deg,#e8eccd 30%,#cfd9a7 50%,#b8c8e0)', url:'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', o:{subdomains:'abc',maxZoom:17,attribution:OSM+' &copy; OpenTopoMap'}},
+  {id:'none',  name:'เส้นเขตอย่างเดียว', sw:'var(--land)'},
+];
+const LS_BM='bkk-flood-basemap';
+const opts={edges:true,labels:true,shade:true};
+let bm=null, bmLayers=[], tileFailures=0;
+const tilesOn=()=>bm && bm.id!=='none';
+
+function setBasemap(id,quiet){
+  const next=BASEMAPS.find(b=>b.id===id)||BASEMAPS[0];
+  bmLayers.forEach(l=>map.removeLayer(l)); bmLayers=[]; tileFailures=0; bm=next;
+  if(next.url){
+    const base=L.tileLayer(next.url,next.o);
+    base.on('tileerror',()=>{ if(++tileFailures===4 && bm===next){ toast(`โหลดแผนที่แบบ “${next.name}” ไม่ได้ เปลี่ยนเป็นเส้นเขตอย่างเดียว`); setBasemap('none',true);} });
+    base.on('tileload',()=>{tileFailures=0});
+    bmLayers.push(base.addTo(map).bringToBack());
+    if(next.labels) bmLayers.push(L.tileLayer(next.labels,{maxZoom:19,pane:'overlayPane',...(next.lo||{})}).addTo(map));
+  }
+  $('#bmCur').textContent=next.name;
+  document.querySelectorAll('.bm').forEach(b=>b.setAttribute('aria-pressed',b.dataset.id===next.id?'true':'false'));
+  if(!quiet) try{localStorage.setItem(LS_BM,next.id)}catch(e){}
+  refreshOverlays();
+}
+function refreshOverlays(){ distLayer.setStyle(distStyle); syncLabels(); }
+
+function distStyle(f){
+  const n = state.pins.filter(p=>p.d===f.properties.c && pinClass(p)==='dry').length;
+  const onImage = tilesOn();
+  const edge = bm?.dark ? 'rgba(255,255,255,.75)' : cssVar('--land-edge');
+  const hi = opts.shade && n>0;
+  return {
+    color:edge, weight:opts.edges?(bm?.dark?1.3:1.2):0, opacity:opts.edges?1:0,
+    fillColor:hi?cssVar('--land-hi'):cssVar('--land'),
+    fillOpacity: onImage ? (hi?.35:0) : (hi?.85:1),
+  };
+}
+const distLayer = L.geoJSON(DISTRICTS,{style:distStyle,onEachFeature:(f,l)=>{
+  l.bindTooltip(()=>{const c=f.properties.c;const ps=state.pins.filter(p=>p.d===c);const dry=ps.filter(p=>pinClass(p)==='dry').length;
+    return `<b>เขต${f.properties.n}</b><br><span style="font-size:12px">${ps.length} หมุด · รอดทั้ง 2 ปี ${dry}</span>`},{sticky:true,direction:'top',opacity:1});
+  l.on('click',e=>startDraft(e.latlng.lat,e.latlng.lng));
+}}).addTo(map);
+map.on('click',e=>{ if(!districtAt(e.latlng.lat,e.latlng.lng)) toast('ตอนนี้รับเฉพาะพื้นที่ในกรุงเทพฯ ก่อน'); });
+
+// district name labels, shown from zoom 12 when the basemap has no labels of its own
+const labelLayer = L.layerGroup();
+DISTRICTS.features.forEach(f=>{const c=L.polygon(f.geometry.coordinates.map(r=>r.map(([x,y])=>[y,x]))).getBounds().getCenter();
+  labelLayer.addLayer(L.tooltip({permanent:true,direction:'center',className:'dlabel',opacity:1}).setLatLng(c).setContent(f.properties.n));});
+function syncLabels(){
+  const show = opts.labels && map.getZoom()>=12 && (!tilesOn() || map.getZoom()<14);
+  document.getElementById('map').classList.toggle('labels-dark', !!bm?.dark);
+  show ? labelLayer.addTo(map) : map.removeLayer(labelLayer);
+}
+map.on('zoomend',syncLabels);
+
+// basemap chooser UI
+BASEMAPS.forEach(b=>{
+  const btn=el('button',{class:'bm',type:'button','data-id':b.id,'aria-pressed':'false'},el('i',{class:'sw2',style:'background:'+b.sw}),el('span',{},b.name));
+  btn.onclick=()=>setBasemap(b.id); $('#bmGrid').append(btn); });
+$('#bmToggle').onclick=()=>{const p=$('#bmPanel');p.hidden=!p.hidden;$('#bmToggle').setAttribute('aria-expanded',String(!p.hidden))};
+[['optEdges','edges'],['optLabels','labels'],['optShade','shade']].forEach(([id,k])=>{$('#'+id).onchange=e=>{opts[k]=e.target.checked;refreshOverlays()}});
+
+const pinLayer = L.layerGroup().addTo(map);
+const markers = new Map();
+let draftMarker = null;
+
+/* ---------- data stores ---------- */
+function localStore(){
+  let pins; try{pins=JSON.parse(localStorage.getItem(LS_KEY)||'null')}catch(e){pins=null}
+  if(!Array.isArray(pins)) pins = EXAMPLES.map(p=>({...p,d:districtAt(p.lat,p.lng)?.c??null,by:'local'}));
+  let cb=()=>{};
+  const save=()=>{try{localStorage.setItem(LS_KEY,JSON.stringify(pins))}catch(e){} cb(pins.slice())};
+  return {
+    live:false,
+    subscribe(fn){cb=fn;fn(pins.slice())},
+    async add(p){pins.push({...p,id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)});save()},
+    async remove(id){pins=pins.filter(p=>p.id!==id);save()},
+  };
+}
+const CFG = window.APP_CONFIG || {};
+const LS_MINE='bkk-flood-mine', LS_VOTED='bkk-flood-voted';
+const lsGet=k=>{try{return JSON.parse(localStorage.getItem(k)||'{}')||{}}catch(e){return {}}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const fromRow=r=>({id:r.id,name:r.name,lat:r.lat,lng:r.lng,d:r.district,y54:r.y54,y69:r.y69,note:r.note,cc:r.confirm_count||0,rc:r.report_count||0,at:Date.parse(r.created_at)});
+async function api(path,method,body){
+  const r=await fetch(path,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok) throw Object.assign(new Error(j.error||'บันทึกไม่สำเร็จ ลองอีกครั้ง'),{status:r.status});
+  return j;
+}
+function supaStore(){
+  const sbc = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey, {auth:{persistSession:false}});
+  const byId=new Map(); let cb=()=>{};
+  const emit=()=>cb([...byId.values()]);
+  const COLS='id,name,lat,lng,district,y54,y69,note,confirm_count,report_count,created_at';
+  async function load(){
+    const {data,error}=await sbc.from('pins').select(COLS).order('created_at',{ascending:false}).limit(5000);
+    if(error){console.warn(error);toast('โหลดหมุดไม่สำเร็จ ลองรีเฟรชหน้า');return}
+    byId.clear(); data.forEach(r=>byId.set(r.id,fromRow(r))); emit();
+  }
+  return {
+    live:true,
+    subscribe(fn){
+      cb=fn; load();
+      sbc.channel('pins-live').on('postgres_changes',{event:'*',schema:'public',table:'pins'},ev=>{
+        if(ev.eventType==='DELETE'){byId.delete(ev.old.id)}
+        else if(ev.new.hidden){byId.delete(ev.new.id)}
+        else byId.set(ev.new.id,fromRow(ev.new));
+        emit();
+      }).subscribe();
+      setInterval(()=>{ if(!document.hidden) load(); }, 180000);
+      document.addEventListener('visibilitychange',()=>{ if(!document.hidden) load(); });
+    },
+    async add(p,turnstileToken){
+      const j=await api('/api/pins','POST',{name:p.name,lat:p.lat,lng:p.lng,y54:p.y54,y69:p.y69,note:p.note,turnstileToken});
+      const mine=lsGet(LS_MINE); mine[j.pin.id]=j.token; lsSet(LS_MINE,mine);
+      byId.set(j.pin.id,fromRow(j.pin)); emit();
+    },
+    async remove(id){
+      const mine=lsGet(LS_MINE);
+      await api('/api/pins','DELETE',{id,token:mine[id]});
+      delete mine[id]; lsSet(LS_MINE,mine); byId.delete(id); emit();
+    },
+    async vote(id,kind){
+      const j=await api('/api/vote','POST',{pinId:id,kind});
+      const v=lsGet(LS_VOTED); v[id]=kind; lsSet(LS_VOTED,v);
+      if(j.hidden) byId.delete(id); else { const p=byId.get(id); if(p) byId.set(id,{...p,cc:j.confirm_count,rc:j.report_count}); }
+      emit();
+    },
+    canDelete:id=>!!lsGet(LS_MINE)[id],
+  };
+}
+
+/* ---------- render ---------- */
+function visible(p){
+  if(state.filter==='both'&&pinClass(p)!=='dry')return false;
+  if(state.filter==='y54'&&p.y54!=='dry')return false;
+  if(state.filter==='y69'&&p.y69!=='dry')return false;
+  if(state.dist&&String(p.d)!==state.dist)return false;
+  if(state.q&&!String(p.name||'').toLowerCase().includes(state.q.toLowerCase()))return false;
+  return true;
+}
+function el(tag,attrs={},...kids){const e=document.createElement(tag);for(const[k,v]of Object.entries(attrs)){if(k==='class')e.className=v;else if(k==='style')e.style.cssText=v;else e.setAttribute(k,v)}for(const k of kids){if(k!=null)e.append(k)}return e}
+function yb(label,v){return el('span',{class:'yb '+(v||'unk')},`${label} ${YEAR_LABEL[v]||'ไม่ทราบ'}`)}
+function popupFor(p){
+  const box=el('div',{class:'pop'});
+  const h=el('h3',{},p.name||'ไม่มีชื่อ'); if(p.example)h.append(el('span',{class:'tag-ex'},'ตัวอย่าง'));
+  box.append(h, el('div',{style:'font-size:12.5px;color:var(--ink-3)'},p.d?('เขต'+(distByCode[p.d]?.n||'')):''), el('div',{class:'yrs',style:'margin-top:6px'},yb('ปี 54',p.y54),yb('ปี 69',p.y69)));
+  if(p.note)box.append(el('p',{},p.note));
+  box.append(el('div',{style:'font-size:11.5px;color:var(--ink-3);margin-top:6px'},'เพิ่มเมื่อ '+new Date(p.at||0).toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'})));
+  if(state.store?.vote){
+    const voted=lsGet(LS_VOTED)[p.id];
+    const mk=(kind,label,n)=>{const b=el('button',{class:'vbtn'+(voted===kind?' on':''),type:'button'},`${label} ${n}`);
+      b.onclick=async()=>{b.disabled=true;try{await state.store.vote(p.id,kind);toast(kind==='confirm'?'ขอบคุณที่ช่วยยืนยัน':'รับแจ้งแล้ว ถ้ามีคนแจ้งหลายคน หมุดจะถูกซ่อน');map.closePopup()}catch(e){toast(e.message);b.disabled=false}};return b};
+    box.append(el('div',{class:'votes'},mk('confirm','✓ ข้อมูลถูกต้อง',p.cc||0),mk('report','⚑ แจ้งว่าผิด',p.rc||0)));
+  }
+  if(canDelete(p)){const b=el('button',{class:'btn danger',style:'margin-top:8px;padding:4px 10px;font-size:13px'},'ลบหมุดนี้');
+    b.onclick=async()=>{ if(b.dataset.sure){ try{await state.store.remove(p.id);map.closePopup();toast('ลบหมุดแล้ว')}catch(e){toast(e.message||'ลบไม่สำเร็จ')} } else { b.dataset.sure=1;b.textContent='กดอีกครั้งเพื่อยืนยันลบ'; } };
+    box.append(b);}
+  return box;
+}
+function canDelete(p){ return state.store?.canDelete ? state.store.canDelete(p.id) : true; }
+
+function render(){
+  const pins=state.pins;
+  $('#sAll').textContent=pins.length;
+  $('#sBoth').textContent=pins.filter(p=>pinClass(p)==='dry').length;
+  $('#sDist').textContent=new Set(pins.map(p=>p.d).filter(Boolean)).size;
+  distLayer.setStyle(distStyle);
+
+  const vis=pins.filter(visible).sort((a,b)=>(b.at||0)-(a.at||0));
+  const seen=new Set();
+  for(const p of vis){
+    seen.add(p.id);
+    let m=markers.get(p.id);
+    const icon=pinIcon(pinClass(p));
+    if(!m){m=L.marker([p.lat,p.lng],{icon,title:p.name||''}).bindPopup(()=>popupFor(p),{offset:[0,-30]});markers.set(p.id,m)}
+    else{m.setLatLng([p.lat,p.lng]);m.setIcon(icon);m.setPopupContent(()=>popupFor(p))}
+    m.addTo(pinLayer);
+  }
+  for(const[id,m]of markers){if(!seen.has(id)){pinLayer.removeLayer(m);if(!pins.some(p=>p.id===id))markers.delete(id)}}
+
+  const list=$('#list');list.replaceChildren();
+  $('#listCount').textContent=vis.length;
+  if(!vis.length){list.append(el('div',{class:'empty'},pins.length?'ไม่พบหมุดตามตัวกรองนี้':'ยังไม่มีใครปักหมุด เริ่มคนแรกได้เลย คลิกบนแผนที่ตรงหมู่บ้านของคุณ'));return}
+  for(const p of vis.slice(0,300)){
+    const nm=el('div',{class:'nm'},p.name||'ไม่มีชื่อ'); if(p.example)nm.append(el('span',{class:'tag-ex'},'ตัวอย่าง'));
+    const it=el('button',{class:'item',type:'button'},
+      el('span',{class:'g '+pinClass(p),style:'margin-top:2px'},GLYPH[pinClass(p)]),
+      el('div',{},nm,el('div',{class:'meta'},p.d?('เขต'+(distByCode[p.d]?.n||'')):'')),
+      el('div',{class:'yrs'},yb('54',p.y54),yb('69',p.y69)));
+    it.onclick=()=>{map.setView([p.lat,p.lng],Math.max(map.getZoom(),15));markers.get(p.id)?.openPopup()};
+    list.append(it);
+  }
+}
+
+/* ---------- add form ---------- */
+function startDraft(lat,lng){
+  const d=districtAt(lat,lng); if(!d){toast('ตอนนี้รับเฉพาะพื้นที่ในกรุงเทพฯ ก่อน');return}
+  state.draft={...(state.draft||{}),lat,lng,d:d.c};
+  const ll=[lat,lng];
+  if(!draftMarker){draftMarker=L.marker(ll,{draggable:true,icon:L.divIcon({className:'draft-pin',html:`<div style="width:22px;height:22px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${cssVar('--accent')};border:3px solid ${cssVar('--panel')};box-shadow:0 2px 6px rgba(0,0,0,.35)"></div>`,iconSize:[22,22],iconAnchor:[4,20]})}).addTo(map);
+    draftMarker.on('dragend',()=>{const p=draftMarker.getLatLng();const dd=districtAt(p.lat,p.lng);if(!dd){toast('ต้องอยู่ในกรุงเทพฯ');draftMarker.setLatLng([state.draft.lat,state.draft.lng]);return}state.draft.lat=p.lat;state.draft.lng=p.lng;state.draft.d=dd.c;$('#fWhere').textContent=whereText()})}
+  else draftMarker.setLatLng(ll);
+  showForm();
+}
+function whereText(){const d=state.draft;return `เขต${distByCode[d.d]?.n||''} · ${d.lat.toFixed(5)}, ${d.lng.toFixed(5)} (ลากหมุดเพื่อขยับได้)`}
+function seg(name){
+  const box=el('div',{class:'seg',role:'radiogroup'});
+  for(const v of ['dry','wet','unk']){const id=name+'_'+v;const i=el('input',{type:'radio',name,id,value:v});if(state.draft?.[name]===v)i.checked=true;
+    i.onchange=()=>state.draft[name]=v; box.append(i,el('label',{for:id,class:v},YEAR_LABEL[v]))}
+  return box;
+}
+function showForm(){
+  const host=$('#formHost');
+  if(host.firstChild){$('#fWhere').textContent=whereText();return}
+  $('#hint').hidden=true;
+  const name=el('input',{type:'text',id:'fName',maxlength:'80',placeholder:'เช่น หมู่บ้านพฤกษา 12 / ชุมชนวัดใหม่'});name.value=state.draft.name||'';name.oninput=()=>state.draft.name=name.value;
+  const note=el('textarea',{id:'fNote',maxlength:'300',placeholder:'ไม่บังคับ เช่น ระดับน้ำ, ถนนเข้าออกได้ไหม, ท่วมกี่วัน'});note.value=state.draft.note||'';note.oninput=()=>state.draft.note=note.value;
+  const err=el('div',{class:'err',id:'fErr'});
+  const tsBox=el('div',{id:'tsBox'}); let tsId=null;
+  if(state.store?.live && CFG.turnstileSiteKey) loadTurnstile().then(ts=>{ if(ts&&tsBox.isConnected) tsId=ts.render(tsBox,{sitekey:CFG.turnstileSiteKey,language:'th'}); });
+  const save=el('button',{class:'btn primary',type:'submit'},'ปักหมุด');
+  const cancel=el('button',{class:'btn',type:'button'},'ยกเลิก');cancel.onclick=closeForm;
+  const f=el('form',{class:'form'},
+    el('h2',{},'ปักหมุดใหม่'),
+    el('div',{class:'where',id:'fWhere'},whereText()),
+    el('label',{class:'f',for:'fName'},'ชื่อหมู่บ้าน / ชุมชน / คอนโด',name),
+    el('div',{class:'yearq'},el('div',{class:'q'},'มหาอุทกภัยปี 2554'),seg('y54')),
+    el('div',{class:'yearq'},el('div',{class:'q'},'น้ำปี 2569'),seg('y69')),
+    el('label',{class:'f',for:'fNote'},'รายละเอียดเพิ่มเติม',note),
+    tsBox, err, el('div',{class:'btns'},cancel,save));
+  f.onsubmit=async e=>{e.preventDefault();const d=state.draft;
+    const nm=(d.name||'').trim();
+    if(!nm){err.textContent='กรอกชื่อหมู่บ้านก่อน';name.focus();return}
+    if(!d.y54&&!d.y69){err.textContent='เลือกสถานะอย่างน้อย 1 ปี';return}
+    save.disabled=true;err.textContent='';
+    const pin={name:nm.slice(0,80),lat:+d.lat.toFixed(6),lng:+d.lng.toFixed(6),d:d.d,y54:d.y54||'unk',y69:d.y69||'unk',note:(d.note||'').trim().slice(0,300),at:Date.now()};
+    const tsToken = tsId!=null && window.turnstile ? window.turnstile.getResponse(tsId) : undefined;
+    try{await state.store.add(pin,tsToken);toast('ปักหมุดแล้ว ขอบคุณที่ช่วยกันครับ');closeForm()}
+    catch(ex){save.disabled=false;err.textContent=ex?.message||'บันทึกไม่สำเร็จ ลองอีกครั้ง'; if(tsId!=null&&window.turnstile) window.turnstile.reset(tsId)}};
+  host.append(f);
+  host.scrollIntoView({block:'nearest',behavior:'smooth'});
+  setTimeout(()=>name.focus(),50);
+}
+function closeForm(){ $('#formHost').replaceChildren(); $('#hint').hidden=false; state.draft=null; if(draftMarker){map.removeLayer(draftMarker);draftMarker=null} }
+
+/* ---------- controls ---------- */
+DISTRICTS.features.map(f=>f.properties).sort((a,b)=>a.n.localeCompare(b.n,'th')).forEach(p=>$('#distSel').append(el('option',{value:String(p.c)},'เขต'+p.n)));
+$('#distSel').onchange=e=>{state.dist=e.target.value;render();
+  if(state.dist){const f=DISTRICTS.features.find(f=>String(f.properties.c)===state.dist);map.fitBounds(L.geoJSON(f).getBounds(),{padding:[20,20]})}};
+$('#q').oninput=e=>{state.q=e.target.value.trim();render()};
+$('#chips').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;state.filter=b.dataset.f;document.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',c===b?'true':'false'));render()};
+function parseCoord(s){
+  s=decodeURIComponent(s||'');
+  let m=s.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)||s.match(/[?&](?:q|ll|query)=(-?\d+\.\d+),\s*(-?\d+\.\d+)/)||s.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)||s.match(/(-?\d{1,2}\.\d+)\s*,\s*(-?\d{2,3}\.\d+)/);
+  return m?[+m[1],+m[2]]:null;
+}
+$('#coordGo').onclick=()=>{const c=parseCoord($('#coordIn').value);if(!c){toast('อ่านพิกัดไม่ออก ลองแบบ 13.75, 100.50');return}
+  map.setView(c,16);startDraft(c[0],c[1])};
+$('#coordIn').onkeydown=e=>{if(e.key==='Enter')$('#coordGo').click()};
+
+/* ---------- boot ---------- */
+function useStore(store){
+  state.store=store;
+  const m=$('#mode');m.classList.toggle('live',store.live);
+  m.querySelector('span').textContent=store.live?'ข้อมูลออนไลน์ ทุกคนเห็นหมุดเดียวกัน':'โหมดทดลองในเครื่อง หมุดเก็บไว้ใน browser นี้เท่านั้น';
+  store.subscribe(p=>{state.pins=p;render()});
+}
+let turnstileP=null;
+function loadTurnstile(){
+  return turnstileP ||= new Promise(res=>{const s=document.createElement('script');s.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';s.async=true;
+    s.onload=()=>res(window.turnstile||null);s.onerror=()=>res(null);document.head.append(s)});
+}
+let savedBm=null; try{savedBm=localStorage.getItem(LS_BM)}catch(e){}
+setBasemap(savedBm||'light',true);
+const online = !!(CFG.supabaseUrl && CFG.supabaseAnonKey && window.supabase);
+useStore(online ? supaStore() : localStore());
+</script>
